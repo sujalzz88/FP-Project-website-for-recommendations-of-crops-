@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CropSense — AI Recommendation System for Crop Selection</title>
+  <style>
+    :root {
+      --green: #3ca65a;
+      --light-green: #a8eb12;
+      --dark-green: #184d28;
+      --white: #ffffff;
+      --gray: #e6e6e6;
+      --text-dark: #1b1b1b;
+      --bg-dark: #121212;
+      --card-dark: #1e1e1e;
+      --text-light: #f5f5f5;
+      font-family: 'Poppins', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, var(--green), var(--light-green));
+      min-height: 100vh;
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-light);
+    }
+    header {
+      width: 100%;
+      background: var(--dark-green);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 {
+      font-size: 30px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 span {
+      background: var(--white);
+      color: var(--green);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 26px;
+      transform: rotate(-5deg);
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toggle-btn, select {
+      background: var(--white);
+      color: var(--green);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .toggle-btn:hover, select:hover {
+      background: var(--light-green);
+      color: var(--dark-green);
+    }
+    main {
+      max-width: 1000px;
+      width: 90%;
+      background: var(--white);
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      margin-top: 40px;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+    body.dark main { background: var(--card-dark); }
+    .card {
+      background: var(--gray);
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+    body.dark .card { background: #2a2a2a; }
+    h2 { color: var(--green); font-size: 22px; margin-top: 0; margin-bottom: 15px; }
+    label { display: block; margin: 10px 0 5px; font-weight: 500; }
+    input, select, button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    button {
+      background: var(--green);
+      color: var(--white);
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 15px;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover { background: var(--dark-green); }
+    #recList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .crop-item {
+      background: linear-gradient(135deg, #e9ffe9, #d4ffd6);
+      border-radius: 10px;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chip {
+      background: var(--green);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    footer {
+      margin: 30px 0 10px;
+      text-align: center;
+      color: #2f2f2f;
+      font-size: 14px;
+    }
+    @media(max-width: 900px) {
+      main { grid-template-columns: 1fr; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>🌾</span> CropSense - AI Crop Recommendation</h1>
+    <div class="controls">
+      <button class="toggle-btn" onclick="toggleTheme()">🌙 Dark</button>
+      <select id="lang" onchange="setLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2 id="title">Enter Soil Details</h2>
+      <label id="lblPh">Soil pH</label>
+      <input id="ph" type="number" step="0.1" placeholder="e.g., 6.5" />
+
+      <label id="lblMoisture">Moisture (%)</label>
+      <input id="moisture" type="number" placeholder="e.g., 30" />
+
+      <label id="lblNitrogen">Nitrogen (kg/ha)</label>
+      <input id="nitrogen" type="number" placeholder="e.g., 100" />
+
+      <label id="lblSeason">Season</label>
+      <select id="season">
+        <option value="kharif">Kharif</option>
+        <option value="rabi">Rabi</option>
+        <option value="summer">Summer</option>
+      </select>
+
+      <button id="btnGet" onclick="recommend()">Get Recommendations</button>
+    </div>
+
+    <div class="card">
+      <h2>Recommended Crops</h2>
+      <div id="recList">Enter soil data and click the button to see suggestions.</div>
+    </div>
+  </main>
+
+  <footer>🌱 Developed with AI to empower sustainable farming choices.</footer>
+
+  <script>
+    const translations = {
+      en: {
+        title: "Enter Soil Details",
+        ph: "Soil pH",
+        moisture: "Moisture (%)",
+        nitrogen: "Nitrogen (kg/ha)",
+        season: "Season",
+        getBtn: "Get Recommendations"
+      },
+      hi: {
+        title: "मिट्टी का विवरण दर्ज करें",
+        ph: "मिट्टी का pH",
+        moisture: "नमी (%)",
+        nitrogen: "नाइट्रोजन (किग्रा/हेक्टेयर)",
+        season: "मौसम",
+        getBtn: "सिफारिशें प्राप्त करें"
+      },
+      mr: {
+        title: "मातीचा तपशील भरा",
+        ph: "मातीचा pH",
+        moisture: "आर्द्रता (%)",
+        nitrogen: "नायट्रोजन (कि.ग्रॅ./हेक्टेअर)",
+        season: "हंगाम",
+        getBtn: "शिफारसी मिळवा"
+      }
+    };
+
+    function setLanguage(lang) {
+      document.getElementById("title").textContent = translations[lang].title;
+      document.getElementById("lblPh").textContent = translations[lang].ph;
+      document.getElementById("lblMoisture").textContent = translations[lang].moisture;
+      document.getElementById("lblNitrogen").textContent = translations[lang].nitrogen;
+      document.getElementById("lblSeason").textContent = translations[lang].season;
+      document.getElementById("btnGet").textContent = translations[lang].getBtn;
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const btn = document.querySelector('.toggle-btn');
+      btn.textContent = document.body.classList.contains('dark') ? '☀️ Light' : '🌙 Dark';
+    }
+
+    const crops = [
+      {name:'Wheat', ph:[6.0,7.5], moisture:[20,45], nitrogen:120, season:'rabi'},
+      {name:'Rice', ph:[5.0,6.5], moisture:[60,100], nitrogen:140, season:'kharif'},
+      {name:'Maize', ph:[5.8,7.0], moisture:[30,60], nitrogen:100, season:'kharif'},
+      {name:'Cotton', ph:[6.0,8.0], moisture:[20,40], nitrogen:80, season:'kharif'}
+    ];
+
+    function recommend() {
+      const ph = parseFloat(document.getElementById('ph').value);
+      const moisture = parseFloat(document.getElementById('moisture').value);
+      const nitrogen = parseFloat(document.getElementById('nitrogen').value);
+      const season = document.getElementById('season').value;
+
+      if (isNaN(ph) || isNaN(moisture) || isNaN(nitrogen)) {
+        document.getElementById('recList').innerHTML = '<p style="color:red">Please fill in all values correctly.</p>';
+        return;
+      }
+
+      const results = crops.map(c => {
+        let score = 0;
+        if (ph >= c.ph[0] && ph <= c.ph[1]) score++;
+        if (moisture >= c.moisture[0] && moisture <= c.moisture[1]) score++;
+        if (Math.abs(nitrogen - c.nitrogen) <= 40) score++;
+        if (season === c.season) score++;
+        return { ...c, score };
+      }).sort((a,b)=>b.score - a.score);
+
+      const recList = document.getElementById('recList');
+      recList.innerHTML = results.map(r => `
+        <div class='crop-item'>
+          <div><strong>${r.name}</strong> (${r.season})</div>
+          <div class='chip'>Score: ${r.score}/4</div>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
